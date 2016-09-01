@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">POPMovie</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="pref_movie_order_title">Movie List Order By</string>
+    <string name="pref_movie_order_key">movie_list_order</string>
+    <string name="pref_movie_order_default">popularity.desc</string>
+    <string name="title_activity_settings">Settings</string>
+</resources>

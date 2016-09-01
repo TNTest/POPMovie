@@ -1,0 +1,73 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.ynmiyou.popmovie.DetailFragment"
+    android:orientation="vertical">
+    <TextView
+        android:id="@+id/detail_title"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="title"
+        android:gravity="center_vertical"
+        android:textSize="50dp"
+        android:paddingLeft="30dp"
+        android:background="@color/detail_title_bk"
+        android:textColor="@color/detail_title_font"
+        android:singleLine="false" />
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingLeft="0dp"
+        android:paddingTop="10dp">
+        <ImageView
+            android:id="@+id/detail_poster"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:src="@drawable/abc_ic_menu_selectall_mtrl_alpha" />
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:paddingLeft="30dp">
+            <TextView
+                android:id="@+id/detail_release_date"
+                android:layout_width="match_parent"
+                android:layout_weight="1"
+                android:layout_height="0dp"
+                android:text="release date"
+                android:textSize="30dp" />
+           <!-- <TextView
+                android:id="@+id/detail_length"
+                android:layout_width="match_parent"
+                android:layout_weight="1"
+                android:layout_height="0dp"
+                android:text="text2"
+                android:textSize="25dp"
+                android:textStyle="bold" />-->
+            <TextView
+                android:id="@+id/detail_vote"
+                android:layout_width="match_parent"
+                android:layout_weight="1"
+                android:layout_height="0dp"
+                android:text="vote info"
+                android:textColor="@color/detail_special_font" />
+        </LinearLayout>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/detail_overview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="summary"
+        android:paddingLeft="30dp"
+        android:textSize="18dp" />
+</LinearLayout>
+
