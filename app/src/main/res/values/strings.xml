@@ -7,4 +7,6 @@
     <string name="pref_movie_order_key">movie_list_order</string>
     <string name="pref_movie_order_default">popularity.desc</string>
     <string name="title_activity_settings">Settings</string>
+    <string name="err_network_not_available">The network is not available!</string>
+    <string name="err_no_response">Response is empty!</string>
 </resources>

@@ -1,8 +1,11 @@
 package com.ynmiyou.popmovie;
 
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -18,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -142,7 +146,7 @@ public class MainFragment extends Fragment {
             responseJsonStr = buffer.toString();
         } catch (IOException e) {
             Log.e("PlaceholderFragment", "Error ", e);
-            // If the code didn't successfully get the weather data, there's no point in attempting
+            // If the code didn't successfully get the movie data, there's no point in attempting
             // to parse it.
             responseJsonStr = null;
         } finally{
@@ -171,7 +175,12 @@ public class MainFragment extends Fragment {
         //Log.d(LOG_TAG,"location key:" + getString(R.string.pref_location_key));
         String orderBy = sharedPref.getString(getString(R.string.pref_movie_order_key),
                 getString(R.string.pref_movie_order_default));
-        new FetchMovieTask().execute(orderBy); //prefs[0]
+        if (Util.isNetworkAvailable(getContext())) {
+            new FetchMovieTask().execute(orderBy); //prefs[0]
+        } else {
+            Toast.makeText(getContext(),R.string.err_network_not_available,Toast.LENGTH_SHORT).show();
+            Log.w(LOG_TAG, "updateMovie list fail! The network is not available.");
+        }
     }
 
     private class FetchMovieTask extends AsyncTask<String, Void, MovieItem[]> {
@@ -187,12 +196,19 @@ public class MainFragment extends Fragment {
             String uristr = builder.build().toString();
             Log.d(FetchMovieTask.class.getSimpleName(), "built url: " +uristr);
             String json = connectUrlJson(uristr);
-            try {
-                return getMovieDataFromJson(json);
-            } catch (JSONException e) {
-                Log.e(LOG_TAG,"parse json fail!");
+            if (Util.isEmpty(json)){
+                Toast.makeText(getContext(),R.string.err_no_response,Toast.LENGTH_SHORT).show();
+                Log.w(LOG_TAG, "Response is empty!");
                 return null;
+            } else {
+                try {
+                    return getMovieDataFromJson(json);
+                } catch (JSONException e) {
+                    Log.e(LOG_TAG,"parse json fail!");
+                    return null;
+                }
             }
+
         }
 
         protected void onPostExecute(MovieItem[] result) {
@@ -220,6 +236,7 @@ public class MainFragment extends Fragment {
         final String TMD_VOTE_COUNT = "vote_count";
         final String TMD_POSTER_PATH = "poster_path";
         final String TMD_RELEASE_DATE = "release_date";
+        final String TMD_OVERVIEW = "overview";
 
         JSONObject movieJson = new JSONObject(movieJsonStr);
         JSONArray movieArray = movieJson.getJSONArray(TMD_LIST);
@@ -244,6 +261,7 @@ public class MainFragment extends Fragment {
             mi.setVoteCount(movieInfo.getString(TMD_VOTE_COUNT));
             mi.setPosterUrl(genFullPosterPath(movieInfo.getString(TMD_POSTER_PATH)));
             mi.setReleaseDate(movieInfo.getString(TMD_RELEASE_DATE));
+            mi.setOverview(movieInfo.getString(TMD_OVERVIEW));
             resultMovies[i] = mi;
         }
         //Log.v(LOG_TAG, "Movies: " + Arrays.toString(resultMovies));
