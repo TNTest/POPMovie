@@ -1,17 +1,16 @@
 package com.ynmiyou.popmovie;
 
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -21,27 +20,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
-import android.widget.Toast;
+import android.widget.ListView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.ynmiyou.popmovie.data.MovieColunms;
+import com.ynmiyou.popmovie.data.MoviesContentProvider;
+import com.ynmiyou.popmovie.sync.POPMovieSyncAdapter;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-public class MainFragment extends Fragment {
+public class MainFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final String LOG_TAG = MainFragment.class.getSimpleName();
     public static final String DETAIL_MSG = "detail";
-    private MovieGridViewAdapter mgvapr;
+    private static final String DETAILFRAGMENT_TAG = "DFTAG";
+    private static final int MOVIEINFO_LOADER = 1;
+    private static final String SELECTED_KEY = "GRID_POSITION";
+    private MovieListAdapter mgvapr;
+    private boolean mTwoPane;
+    private int mPosition = GridView.INVALID_POSITION;
+    private GridView mView;
 
     public MainFragment() {
         // Required empty public constructor
@@ -52,6 +47,7 @@ public class MainFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+
     }
 
     @Override
@@ -60,27 +56,77 @@ public class MainFragment extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_main, container, false);
         Log.d(LOG_TAG,"onCreateView...");
-        List<MovieItem> data = new ArrayList<>();
-        /*MovieItem movie = new MovieItem("http://i.imgur.com/DvpvklR.png","Jason Bourne 5");
-        data.add(movie);*/
-        mgvapr = new MovieGridViewAdapter(getContext(),
-                R.layout.grid_item_layout,data);
+        mgvapr = new MovieListAdapter(getContext(),null,0);
         GridView lv = (GridView)view.findViewById(R.id.gridView);
+        mView = lv;
         lv.setAdapter(mgvapr);
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
 //                Toast.makeText(getContext(),adapterView.getAdapter().getItem(i).toString(),
 //                        Toast.LENGTH_SHORT).show();
                 Intent startDetailIntent = new Intent(getContext(), DetailActivity.class);
                 //using parcelble obj to transfer data
-                Parcelable obj = (Parcelable)adapterView.getAdapter().getItem(i);
-                startDetailIntent.putExtra(DETAIL_MSG, obj);
-                startActivity(startDetailIntent);
+                //Parcelable obj = (Parcelable)adapterView.getAdapter().getItem(i);
+                Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
+                MovieItem mi = new MovieItem();
+                mi.setOverview(cursor.getString(cursor.getColumnIndex(MovieColunms.OVERVIEW)));
+                mi.setPosterUrl(cursor.getString(cursor.getColumnIndex(MovieColunms.POSTERURL)));
+                mi.setTitle(cursor.getString(cursor.getColumnIndex(MovieColunms.TITLE)));
+                mi.setTmdId(cursor.getString(cursor.getColumnIndex(MovieColunms.TMDID)));
+                mi.setVoteAverage(cursor.getString(cursor.getColumnIndex(MovieColunms.VOTEAVERAGE)));
+                mi.setVoteCount(cursor.getString(cursor.getColumnIndex(MovieColunms.VOTECOUNT)));
+                mi.setReleaseDate(cursor.getString(cursor.getColumnIndex(MovieColunms.RELEASEDATE)));
+                Log.d(LOG_TAG,"onClick...");
+                if (mTwoPane) {
+                    // In two-pane mode, show the detail view in this activity by
+                    // adding or replacing the detail fragment using a
+                    // fragment transaction.
+//                    Bundle args = new Bundle();
+//                    args.putParcelable(DETAIL_MSG, mi);
 
+                    DetailFragment fragment = new DetailFragment();
+                    getActivity().getIntent().putExtra(DETAIL_MSG, mi);
+
+                    getActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.movie_detail_container, fragment, DETAILFRAGMENT_TAG)
+                        .commit();
+                } else {
+                    startDetailIntent.putExtra(DETAIL_MSG, mi);
+                    startActivity(startDetailIntent);
+                }
+                mPosition = position;
+                Log.d(LOG_TAG,"onItemClick mPosition: " + mPosition);
             }
         });
         return view;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        getLoaderManager().initLoader(MOVIEINFO_LOADER, null, this);
+        if (getActivity().findViewById(R.id.movie_detail_container) != null) {
+            // The detail container view will be present only in the large-screen layouts
+            // (res/layout-sw600dp). If this view is present, then the activity should be
+            // in two-pane mode.
+            mTwoPane = true;
+            // In two-pane mode, show the detail view in this activity by
+            // adding or replacing the detail fragment using a
+            // fragment transaction.
+            /*if (savedInstanceState == null) {
+                getActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.movie_detail_container, new DetailFragment(), DETAILFRAGMENT_TAG)
+                        .commit();
+            }*/
+        } else {
+            mTwoPane = false;
+        }
+        if (savedInstanceState != null && savedInstanceState.containsKey(SELECTED_KEY)) {
+            mPosition = savedInstanceState.getInt(SELECTED_KEY);
+            Log.d(LOG_TAG, "onActivityCreated savedInstanceState contains key: " + SELECTED_KEY);
+        }
+        Log.d(LOG_TAG, "onActivityCreated mPosition: " + mPosition);
     }
 
     @Override
@@ -97,182 +143,80 @@ public class MainFragment extends Fragment {
                 Intent startSettingsIntent = new Intent(getContext(), SettingsActivity.class);
                 startActivity(startSettingsIntent);
                 return true;
+            case R.id.action_refresh:
+                updateMovieInfo();
+                getLoaderManager().restartLoader(MOVIEINFO_LOADER, null, this);//refresh view by loader
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-    public static String connectUrlJson(String urlstr) {
-        // These two need to be declared outside the try/catch
-// so that they can be closed in the finally block.
-        HttpURLConnection urlConnection = null;
-        BufferedReader reader = null;
-
-// Will contain the raw JSON response as a string.
-        String responseJsonStr = null;
-
-        try {
-            // Construct the URL for the OpenWeatherMap query
-            // Possible parameters are available at OWM's forecast API page, at
-            // http://openweathermap.org/API#forecast
-            URL url = new URL(urlstr);
-
-            // Create the request to OpenWeatherMap, and open the connection
-            urlConnection = (HttpURLConnection) url.openConnection();
-            urlConnection.setRequestMethod("GET");
-            urlConnection.connect();
-
-            // Read the input stream into a String
-            InputStream inputStream = urlConnection.getInputStream();
-            StringBuffer buffer = new StringBuffer();
-            if (inputStream == null) {
-                // Nothing to do.
-                responseJsonStr = null;
-            }
-            reader = new BufferedReader(new InputStreamReader(inputStream));
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                // But it does make debugging a *lot* easier if you print out the completed
-                // buffer for debugging.
-                buffer.append(line + "\n");
-            }
-
-            if (buffer.length() == 0) {
-                // Stream was empty.  No point in parsing.
-                responseJsonStr = null;
-            }
-            responseJsonStr = buffer.toString();
-        } catch (IOException e) {
-            Log.e("PlaceholderFragment", "Error ", e);
-            // If the code didn't successfully get the movie data, there's no point in attempting
-            // to parse it.
-            responseJsonStr = null;
-        } finally{
-            if (urlConnection != null) {
-                urlConnection.disconnect();
-            }
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (final IOException e) {
-                    Log.e("PlaceholderFragment", "Error closing stream", e);
-                }
-            }
-        }
-        return responseJsonStr;
-    }
-
     @Override
     public void onStart() {
         super.onStart();
-        updateMovie();
+        getLoaderManager().restartLoader(MOVIEINFO_LOADER, null, this);//refresh view by loader
     }
 
-    private void updateMovie() {
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+
+        if (mPosition != GridView.INVALID_POSITION) {
+            outState.putInt(SELECTED_KEY, mPosition);
+            Log.d(LOG_TAG,"onSaveInstanceState saving mPosition. ");
+        }
+        Log.d(LOG_TAG,"onSaveInstanceState mPosition: " + mPosition);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        // This is called when a new Loader needs to be created.  This
+        // fragment only uses one loader, so we don't care about checking the id.
+
+        // To only show current and future dates, filter the query to return weather only for
+        // dates after or including today.
+
+        Uri movieContentUri = null;
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        //Log.d(LOG_TAG,"location key:" + getString(R.string.pref_location_key));
-        String orderBy = sharedPref.getString(getString(R.string.pref_movie_order_key),
-                getString(R.string.pref_movie_order_default));
-        if (Util.isNetworkAvailable(getContext())) {
-            new FetchMovieTask().execute(orderBy); //prefs[0]
-        } else {
-            Toast.makeText(getContext(),R.string.err_network_not_available,Toast.LENGTH_SHORT).show();
-            Log.w(LOG_TAG, "updateMovie list fail! The network is not available.");
+        String orderByPref = sharedPref.getString(getString(R.string.pref_movie_order_key),getString(R.string.pref_movie_order_default));
+        String[] orders = getResources().getStringArray(R.array.pref_movie_order_values);
+        if (orders[0].equals(orderByPref)) {// pref is order by vote average
+            movieContentUri = MoviesContentProvider.Movies.moviesv;
+        } else if(orders[2].equals(orderByPref)) {//favorites
+            movieContentUri = MoviesContentProvider.Movies.moviesf;
+        }else {
+            movieContentUri = MoviesContentProvider.Movies.CONTENT_URI;
+        }
+
+        return new CursorLoader(getActivity(),
+                movieContentUri,
+                MovieListAdapter.PROJECTION,
+                null,
+                null,
+                null);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        Log.d(LOG_TAG,"onLoadFinished...");
+        mgvapr.swapCursor(data);
+        Log.d(LOG_TAG,"onLoadFinish mPosition: " + mPosition);
+        if (mPosition != ListView.INVALID_POSITION) {
+            // If we don't need to restart the loader, and there's a desired position to restore
+            // to, do so now.
+            mView.smoothScrollToPosition(mPosition);
         }
     }
 
-    private class FetchMovieTask extends AsyncTask<String, Void, MovieItem[]> {
-        /** The system calls this to perform work in a worker thread and
-         * delivers it the parameters given to AsyncTask.execute()
-         * prefs[0] = order by
-         * */
-        protected MovieItem[] doInBackground(String... prefs) {
-            Uri.Builder builder = new Uri.Builder();
-            builder.scheme("https").appendEncodedPath("/api.themoviedb.org/3/discover/movie")
-                    .appendQueryParameter("sort_by",prefs[0])
-                    .appendQueryParameter("api_key",BuildConfig.MOVIE_DB_API_KEY);
-            String uristr = builder.build().toString();
-            Log.d(FetchMovieTask.class.getSimpleName(), "built url: " +uristr);
-            String json = connectUrlJson(uristr);
-            if (Util.isEmpty(json)){
-                Toast.makeText(getContext(),R.string.err_no_response,Toast.LENGTH_SHORT).show();
-                Log.w(LOG_TAG, "Response is empty!");
-                return null;
-            } else {
-                try {
-                    return getMovieDataFromJson(json);
-                } catch (JSONException e) {
-                    Log.e(LOG_TAG,"parse json fail!");
-                    return null;
-                }
-            }
-
-        }
-
-        protected void onPostExecute(MovieItem[] result) {
-            //Log.d(LOG_TAG, Arrays.toString(result));
-            if (mgvapr != null) {
-                mgvapr.clear();
-                mgvapr.addAll(result);
-            }
-            //update share intent, using first item
-            /*Intent intent = new Intent(Intent.ACTION_SEND);
-            Uri geoLocation = Uri.parse(result[0] + "#SunshineApp").buildUpon().build();
-            intent.setData(geoLocation);
-            mShareActionProvider.setShareIntent(intent);*/
-        }
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mgvapr.swapCursor(null);
     }
 
-    private MovieItem[] getMovieDataFromJson(String movieJsonStr)
-            throws JSONException {
-
-        // These are the names of the JSON objects that need to be extracted.
-        final String TMD_LIST = "results";
-        final String TMD_ID = "id";
-        final String TMD_TITILE = "title";
-        final String TMD_VOTE_AVG = "vote_average";
-        final String TMD_VOTE_COUNT = "vote_count";
-        final String TMD_POSTER_PATH = "poster_path";
-        final String TMD_RELEASE_DATE = "release_date";
-        final String TMD_OVERVIEW = "overview";
-
-        JSONObject movieJson = new JSONObject(movieJsonStr);
-        JSONArray movieArray = movieJson.getJSONArray(TMD_LIST);
-
-        // OWM returns daily forecasts based upon the local time of the city that is being
-        // asked for, which means that we need to know the GMT offset to translate this data
-        // properly.
-
-        // Since this data is also sent in-order and the first day is always the
-        // current day, we're going to take advantage of that to get a nice
-        // normalized UTC date for all of our weather.
-
-        MovieItem[] resultMovies = new MovieItem[movieArray.length()];
-        for(int i = 0; i < movieArray.length(); i++) {
-            MovieItem mi = new MovieItem();
-            // Get the JSON object representing the day
-            JSONObject movieInfo = movieArray.getJSONObject(i);
-            // description is in a child array called "weather", which is 1 element long.
-            mi.setTmdId(movieInfo.getString(TMD_ID));
-            mi.setTitle(movieInfo.getString(TMD_TITILE));
-            mi.setVoteAverage(movieInfo.getString(TMD_VOTE_AVG));
-            mi.setVoteCount(movieInfo.getString(TMD_VOTE_COUNT));
-            mi.setPosterUrl(genFullPosterPath(movieInfo.getString(TMD_POSTER_PATH)));
-            mi.setReleaseDate(movieInfo.getString(TMD_RELEASE_DATE));
-            mi.setOverview(movieInfo.getString(TMD_OVERVIEW));
-            resultMovies[i] = mi;
-        }
-        //Log.v(LOG_TAG, "Movies: " + Arrays.toString(resultMovies));
-        return resultMovies;
-
+    private void updateMovieInfo() {
+        POPMovieSyncAdapter.syncImmediately(getActivity());
     }
 
-    private String genFullPosterPath(String relativePath) {
-        StringBuilder sb = new StringBuilder("http://image.tmdb.org/t/p/w185");
-        sb.append(relativePath);
-        return sb.toString();
-    }
 
 }

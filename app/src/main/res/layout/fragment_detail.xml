@@ -9,10 +9,10 @@
         android:id="@+id/detail_title"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_weight="0.7"
         android:text="title"
         android:gravity="center_vertical"
-        android:textSize="50dp"
+        android:textSize="36sp"
         android:paddingLeft="30dp"
         android:background="@color/detail_title_bk"
         android:textColor="@color/detail_title_font"
@@ -21,7 +21,7 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_weight="1.3"
         android:paddingLeft="0dp"
         android:paddingTop="10dp">
         <ImageView
@@ -59,6 +59,13 @@
                 android:layout_height="0dp"
                 android:text="vote info"
                 android:textColor="@color/detail_special_font" />
+            <TextView
+                android:id="@+id/detail_favorite"
+                android:layout_width="85dp"
+                android:layout_weight="1"
+                android:layout_height="0dp"
+                android:text="MARk AS FAVORITE"
+                android:background="@color/detail_favorite_bk" />
         </LinearLayout>
     </LinearLayout>
     <TextView
@@ -67,6 +74,50 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:text="summary"
+        android:paddingLeft="30dp"
+        android:textSize="18dp" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/black"
+        android:layout_marginLeft="30dp" />
+    <TextView
+        android:id="@+id/detail_video_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Trailers"
+        android:paddingLeft="30dp"
+        android:textSize="18dp"
+        />
+    <ListView
+        android:id="@+id/detail_videos"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="trailer list"
+        android:paddingLeft="30dp"
+        android:textSize="18dp"
+        android:gravity="center_vertical"
+        android:paddingTop="10dp">
+        </ListView>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/black"
+        android:layout_marginLeft="30dp" />
+    <TextView
+        android:id="@+id/detail_reviews_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reviews"
+        android:paddingLeft="30dp"
+        android:textSize="18dp" />
+    <ListView
+        android:id="@+id/detail_reviews"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="review list"
         android:paddingLeft="30dp"
         android:textSize="18dp" />
 </LinearLayout>
