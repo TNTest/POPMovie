@@ -2,6 +2,8 @@ package com.ynmiyou.popmovie;
 
 
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -48,14 +50,13 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
     private static final SimpleDateFormat sdf = new SimpleDateFormat();
     private String mSelectionClause;
     private String[] mSelectionArgs;
-    private DetailFragment mThis;
+    private Context mContext;
     private MovieItem mMi;
+    private Cursor mFvCursor;
 
     public static final String[] PROJECTION = new String[] {
             FavoriteColunms._ID,FavoriteColunms.TMDMID,FavoriteColunms.UPDATED
     };
-    private Cursor mFvCursor;
-
 
     public DetailFragment() {
         // Required empty public constructor
@@ -149,7 +150,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
                 }
             });
         }
-        mThis = this;
+        mContext = this.getActivity().getApplicationContext();
         return view;
     }
 
@@ -313,9 +314,9 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
                             return null;
 
                     }
-                    if (mThis != null && mThis.getContext() != null && mThis.getContext().getContentResolver() != null) {
-                        mThis.getContext().getContentResolver().delete(contentUri, mSelectionClause, mSelectionArgs);
-                        mThis.getContext().getContentResolver().bulkInsert(contentUri, values);
+                    if (mContext != null && mContext.getContentResolver() != null) {
+                        mContext.getContentResolver().delete(contentUri, mSelectionClause, mSelectionArgs);
+                        mContext.getContentResolver().bulkInsert(contentUri, values);
                     } else {
                         Log.e(LOG_TAG,"something is null! (mThis.getContext().getContentResolver())");
                     }
@@ -328,7 +329,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
         }
         protected void onPostExecute(Integer loaderId) {
             if (isAdded()) {
-                getLoaderManager().restartLoader(loaderId, null, mThis);
+                getLoaderManager().restartLoader(loaderId, null, DetailFragment.this);
             }
         }
     }
