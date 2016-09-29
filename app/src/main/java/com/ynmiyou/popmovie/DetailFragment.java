@@ -328,7 +328,7 @@ public class DetailFragment extends Fragment implements LoaderManager.LoaderCall
             }
         }
         protected void onPostExecute(Integer loaderId) {
-            if (isAdded()) {
+            if (isAdded() && loaderId != null) {
                 getLoaderManager().restartLoader(loaderId, null, DetailFragment.this);
             }
         }

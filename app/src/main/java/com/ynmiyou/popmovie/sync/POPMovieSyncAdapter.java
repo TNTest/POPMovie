@@ -7,11 +7,13 @@ import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.SyncRequest;
 import android.content.SyncResult;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
@@ -54,16 +56,15 @@ public class POPMovieSyncAdapter extends AbstractThreadedSyncAdapter {
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
         Log.d(LOG_TAG, "Starting sync");
-        //SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
-        //Log.d(LOG_TAG,"location key:" + getString(R.string.pref_location_key));
-        //String orderBy = sharedPref.getString(getContext().getString(R.string.pref_movie_order_key),
-        //        getContext().getString(R.string.pref_movie_order_default));
-        String orderBy = getContext().getString(R.string.pref_movie_order_default);
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+        String orderBy = sharedPref.getString(getContext().getString(R.string.pref_movie_order_key),
+                getContext().getString(R.string.pref_movie_order_default));
+        //String orderBy = getContext().getString(R.string.pref_movie_order_default);
         if (Util.isNetworkAvailable(getContext())) {
             Uri.Builder builder = new Uri.Builder();
             builder.scheme("https").appendEncodedPath(getContext().getString(R.string.tmd_api_base_url))
-                    .appendEncodedPath("discover/movie")
-                    .appendQueryParameter("sort_by",orderBy)
+                    .appendEncodedPath("movie")
+                    .appendEncodedPath(orderBy)
                     .appendQueryParameter("api_key",BuildConfig.MOVIE_DB_API_KEY);
             String uristr = builder.build().toString();
             Log.d(LOG_TAG, "built url: " +uristr);

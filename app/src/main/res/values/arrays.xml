@@ -6,8 +6,8 @@
         <item>My Favorites</item>
     </string-array>
     <string-array name="pref_movie_order_values">
-        <item>vote_average.desc</item>
-        <item>popularity.desc</item>
+        <item>popular</item>
+        <item>top_rated</item>
         <item>favorite</item>
     </string-array>
 </resources>
